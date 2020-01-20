@@ -1,0 +1,31 @@
+{
+    "name": "ayzamodul/permission",
+    "description": "User role & permissions",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Emre Canbulat",
+            "email": "canbulat95@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "spatie/laravel-permission": "dev-master",
+        "laravelcollective/html": "^5.7@dev"
+    },
+    "autoload": {
+        "psr-4": {
+            "Modul\\Permission\\": "src"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Modul\\Permission\\Providers\\PermissionServiceProvider",
+                "Spatie\\Permission\\PermissionServiceProvider",
+                "Collective\\Html\\HtmlServiceProvider"
+            ]
+        }
+    }
+}

@@ -1,0 +1,131 @@
+<?php
+
+namespace Modul\Permission\Http\Controllers;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+
+use Auth;
+//Importing laravel-permission models
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
+
+use Session;
+
+class RoleController extends Controller
+{
+
+    public function __construct()
+    {
+        $this->middleware("web");  // this will solve your problem
+        $this->middleware("auth");
+        $this->middleware('role:Admin', ['only' => ['index','create','store','edit','update','show','destroy','delete']]);
+
+
+    }
+
+    public function index()
+    {
+      $active ="yetki";
+        $roles = Role::where('deleted',0)->get();
+        return view('permission::roles.index',compact('roles','active'));
+    }
+
+
+    public function create()
+    {
+        $active ="yetki";
+        $permissions = Permission::all();//Get all permissions
+
+        return view('permission::roles.create',compact('permissions','active'));
+    }
+
+
+    public function store(Request $request)
+    {
+        //Validate name and permissions field
+        $this->validate($request, [
+                'name' => 'required|unique:roles|max:35',
+                'permissions' => 'required',
+            ]
+        );
+
+        $name = $request['name'];
+        $role = new Role();
+        $role->name = $name;
+
+        $permissions = $request['permissions'];
+
+        $role->save();
+        //Looping thru selected permissions
+        foreach ($permissions as $permission) {
+            $p = Permission::where('id', '=', $permission)->firstOrFail();
+            //Fetch the newly created role and assign permission
+            $role = Role::where('name', '=', $name)->first();
+            $role->givePermissionTo($p);
+        }
+
+        return redirect()->route('roles.index')
+            ->with('flash_message',
+                'Role' . $role->name . ' added!');
+    }
+
+
+    public function show($id)
+    {
+        return redirect('roles');
+    }
+
+    public function edit($id)
+    {
+        $active ="yetki";
+        $role = Role::findOrFail($id);
+        $permissions = Permission::all();
+
+        return view('permission::roles.edit', compact('role', 'permissions','active'));
+    }
+
+
+    public function update(Request $request, $id)
+    {
+
+        $role = Role::findOrFail($id);//Get role with the given id
+        //Validate name and permission fields
+        $this->validate($request, [
+            'name' => 'required|max:35|unique:roles,name,' . $id,
+            'permissions' => 'required',
+        ]);
+
+        $input = $request->except(['permissions']);
+        $permissions = $request['permissions'];
+        $role->fill($input)->save();
+
+        $p_all = Permission::all();//Get all permissions
+
+        foreach ($p_all as $p) {
+            $role->revokePermissionTo($p); //Remove all permissions associated with role
+        }
+
+        foreach ($permissions as $permission) {
+            $p = Permission::where('id', '=', $permission)->firstOrFail(); //Get corresponding form //permission in db
+            $role->givePermissionTo($p);  //Assign permission to role
+        }
+
+        return redirect()->route('roles.index')
+            ->with('flash_message',
+                'Role' . $role->name . ' updated!');
+    }
+
+
+    public function destroy($id)
+    {
+        $role = Role::findOrFail($id);
+        $role->deleted=1;
+        $role->save();
+
+        return redirect()->route('roles.index')
+            ->with('flash_message',
+                'Role deleted!');
+
+    }
+}
